@@ -1,0 +1,1 @@
+El proyecto solo necesita ejecutar el main.py desde visual studio code
