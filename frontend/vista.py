@@ -3,12 +3,15 @@ import pygame
 import os 
 from constantes import (
     SCREEN_WIDTH, SCREEN_HEIGHT, TILE_SIZE, BLACK, WHITE, GREY, GREEN, RED, GOLD, BLUE, 
-    PLAYER_TANK_IMG, ENEMY_NORMAL_IMG, ENEMY_RAPIDO_IMG, ENEMY_FUERTE_IMG, 
+    PLAYER_TANK_IMG, PLAYER_TANK_1_IMG, PLAYER_TANK_2_IMG, PLAYER_TANK_3_IMG, PLAYER_TANK_4_IMG,
+    ENEMY_NORMAL_IMG, ENEMY_RAPIDO_IMG, ENEMY_FUERTE_IMG, 
     BULLET_IMG, WALL_IMG, TARGET1_IMG, TARGET2_IMG, 
     ENEMY_DESTRUCTION_IMAGE_PATH, 
-    TIPO_JUGADOR, TIPO_ENEMIGO_NORMAL, TIPO_ENEMIGO_RAPIDO, TIPO_ENEMIGO_FUERTE, 
+    TIPO_JUGADOR, TIPO_JUGADOR_1, TIPO_JUGADOR_2, TIPO_JUGADOR_3, TIPO_JUGADOR_4,
+    TIPO_ENEMIGO_NORMAL, TIPO_ENEMIGO_RAPIDO, TIPO_ENEMIGO_FUERTE, 
     TIPO_BALA, TIPO_MURO, TIPO_OBJETIVO1, TIPO_OBJETIVO2, 
-    MENU_INICIO, JUGANDO, NIVEL_COMPLETADO, GAME_OVER, VICTORIA_FINAL, PAUSA, EDITOR_NIVELES, 
+    MENU_INICIO, JUGANDO, NIVEL_COMPLETADO, GAME_OVER, VICTORIA_FINAL, PAUSA, EDITOR_NIVELES,
+    MENU_MULTIJUGADOR, CONFIGURANDO_JUGADORES, ESPERANDO_JUGADORES,
     DEFAULT_EDITOR_FILENAME, EDITOR_NIVELES_PATH, EDITOR_CHAR_VACIO, EDITOR_DISPLAY_TILE_SIZE, 
     EDITOR_COLOR_CURSOR, EDITOR_COLOR_TEXTO_INFO, EDITOR_COLOR_FONDO_INPUT, EDITOR_COLOR_TEXTO_INPUT,
     EDITOR_PLACABLE_CHARS
@@ -45,9 +48,16 @@ class VistaJuego:
         menu_button_spacing = 20
 
         self.boton_inicio = Boton("Iniciar Juego (Nivel 1)", SCREEN_WIDTH // 2 - 150, y_menu_start, 300, menu_button_height)
-        self.boton_cargar_nivel_editado_abrir_selector = Boton("Seleccionar Nivel Editado", SCREEN_WIDTH // 2 - 150, y_menu_start + (menu_button_height + menu_button_spacing), 300, menu_button_height)
-        self.boton_abrir_editor = Boton("Editor de Niveles", SCREEN_WIDTH // 2 - 150, y_menu_start + 2 * (menu_button_height + menu_button_spacing), 300, menu_button_height)
-        self.boton_salir_juego_principal = Boton("Salir del Juego", SCREEN_WIDTH // 2 - 150, y_menu_start + 3 * (menu_button_height + menu_button_spacing), 300, menu_button_height)
+        self.boton_multijugador = Boton("Modo Multijugador", SCREEN_WIDTH // 2 - 150, y_menu_start + (menu_button_height + menu_button_spacing), 300, menu_button_height, color_fondo=(100, 150, 200))
+        self.boton_cargar_nivel_editado_abrir_selector = Boton("Seleccionar Nivel Editado", SCREEN_WIDTH // 2 - 150, y_menu_start + 2 * (menu_button_height + menu_button_spacing), 300, menu_button_height)
+        self.boton_abrir_editor = Boton("Editor de Niveles", SCREEN_WIDTH // 2 - 150, y_menu_start + 3 * (menu_button_height + menu_button_spacing), 300, menu_button_height)
+        self.boton_salir_juego_principal = Boton("Salir del Juego", SCREEN_WIDTH // 2 - 150, y_menu_start + 4 * (menu_button_height + menu_button_spacing), 300, menu_button_height)
+        
+        # Botones para configuración multijugador
+        self.boton_agregar_jugador = Boton("Agregar Jugador", SCREEN_WIDTH // 2 - 250, SCREEN_HEIGHT // 2 - 100, 200, 40, color_fondo=GREEN)
+        self.boton_quitar_jugador = Boton("Quitar Jugador", SCREEN_WIDTH // 2 + 50, SCREEN_HEIGHT // 2 - 100, 200, 40, color_fondo=RED)
+        self.boton_iniciar_multijugador = Boton("Iniciar Partida", SCREEN_WIDTH // 2 - 100, SCREEN_HEIGHT // 2 + 50, 200, 50, color_fondo=(0, 200, 0))
+        self.boton_volver_menu_multi = Boton("Volver", SCREEN_WIDTH // 2 - 100, SCREEN_HEIGHT // 2 + 120, 200, 40, color_fondo=GREY)
         
         selector_button_y = SCREEN_HEIGHT - 80
         self.boton_jugar_nivel_seleccionado = Boton("Jugar Seleccionado", SCREEN_WIDTH // 2 - 220, selector_button_y, 200, 50, color_fondo=GREEN)
@@ -77,7 +87,16 @@ class VistaJuego:
                 surf.fill(color_placeholder)
                 return surf
 
-        assets[PLAYER_TANK_IMG] = cargar_o_crear_placeholder(PLAYER_TANK_IMG, GREEN) 
+        # Cargar imagen base del tanque jugador
+        base_player_img = cargar_o_crear_placeholder(PLAYER_TANK_IMG, GREEN)
+        
+        # Crear versiones coloreadas para cada jugador
+        assets[PLAYER_TANK_1_IMG] = self._colorear_imagen(base_player_img, (0, 255, 0))      # Verde
+        assets[PLAYER_TANK_2_IMG] = self._colorear_imagen(base_player_img, (0, 0, 255))      # Azul
+        assets[PLAYER_TANK_3_IMG] = self._colorear_imagen(base_player_img, (255, 255, 0))    # Amarillo
+        assets[PLAYER_TANK_4_IMG] = self._colorear_imagen(base_player_img, (255, 0, 255))    # Magenta
+        
+        assets[PLAYER_TANK_IMG] = assets[PLAYER_TANK_1_IMG]  # Compatibilidad hacia atrás
         assets[ENEMY_NORMAL_IMG] = cargar_o_crear_placeholder(ENEMY_NORMAL_IMG, RED) 
         assets[ENEMY_RAPIDO_IMG] = cargar_o_crear_placeholder(ENEMY_RAPIDO_IMG, (255,100,100)) 
         assets[ENEMY_FUERTE_IMG] = cargar_o_crear_placeholder(ENEMY_FUERTE_IMG, (150,0,0)) 
@@ -87,9 +106,30 @@ class VistaJuego:
         assets[TARGET2_IMG] = cargar_o_crear_placeholder(TARGET2_IMG, (255, 165, 0)) 
         assets[ENEMY_DESTRUCTION_IMAGE_PATH] = cargar_o_crear_placeholder(ENEMY_DESTRUCTION_IMAGE_PATH, RED, TILE_SIZE, TILE_SIZE) 
         return assets
+    
+    def _colorear_imagen(self, imagen_base, color_tint):
+        """Aplica un tinte de color a una imagen"""
+        # Crear una copia de la imagen
+        imagen_coloreada = imagen_base.copy()
+        
+        # Crear una superficie del color deseado
+        overlay = pygame.Surface(imagen_base.get_size())
+        overlay.fill(color_tint)
+        
+        # Aplicar el tinte usando blend mode
+        imagen_coloreada.blit(overlay, (0, 0), special_flags=pygame.BLEND_MULT)
+        
+        return imagen_coloreada
 
     def _get_imagen_para_objeto(self, tipo_objeto_modelo): 
-        if tipo_objeto_modelo == TIPO_JUGADOR: return self.assets[PLAYER_TANK_IMG] 
+        if tipo_objeto_modelo == TIPO_JUGADOR or tipo_objeto_modelo == TIPO_JUGADOR_1: 
+            return self.assets[PLAYER_TANK_1_IMG]
+        if tipo_objeto_modelo == TIPO_JUGADOR_2: 
+            return self.assets[PLAYER_TANK_2_IMG]
+        if tipo_objeto_modelo == TIPO_JUGADOR_3: 
+            return self.assets[PLAYER_TANK_3_IMG] 
+        if tipo_objeto_modelo == TIPO_JUGADOR_4: 
+            return self.assets[PLAYER_TANK_4_IMG]
         if tipo_objeto_modelo == TIPO_ENEMIGO_NORMAL: return self.assets[ENEMY_NORMAL_IMG] 
         if tipo_objeto_modelo == TIPO_ENEMIGO_RAPIDO: return self.assets[ENEMY_RAPIDO_IMG] 
         if tipo_objeto_modelo == TIPO_ENEMIGO_FUERTE: return self.assets[ENEMY_FUERTE_IMG] 
@@ -125,11 +165,20 @@ class VistaJuego:
     def _actualizar_visibilidad_botones(self, estado_global_juego): 
         es_menu_inicio = (estado_global_juego == MENU_INICIO) 
         mostrando_selector = es_menu_inicio and self.mostrando_selector_nivel_editado
+        es_menu_multijugador = (estado_global_juego == MENU_MULTIJUGADOR)
+        es_configurando_jugadores = (estado_global_juego == CONFIGURANDO_JUGADORES)
 
         self.boton_inicio.activo = es_menu_inicio and not mostrando_selector
+        self.boton_multijugador.activo = es_menu_inicio and not mostrando_selector
         self.boton_abrir_editor.activo = es_menu_inicio and not mostrando_selector
         self.boton_cargar_nivel_editado_abrir_selector.activo = es_menu_inicio and not mostrando_selector
         self.boton_salir_juego_principal.activo = es_menu_inicio and not mostrando_selector
+
+        # Botones multijugador
+        self.boton_agregar_jugador.activo = es_configurando_jugadores
+        self.boton_quitar_jugador.activo = es_configurando_jugadores
+        self.boton_iniciar_multijugador.activo = es_configurando_jugadores
+        self.boton_volver_menu_multi.activo = es_configurando_jugadores
 
         self.boton_jugar_nivel_seleccionado.activo = mostrando_selector
         self.boton_volver_de_seleccion_a_menu.activo = mostrando_selector
@@ -170,6 +219,13 @@ class VistaJuego:
 
 
     def _dibujar_hud(self, estado_del_modelo): 
+        if estado_del_modelo.get('modo_multijugador', False):
+            self._dibujar_hud_multijugador(estado_del_modelo)
+        else:
+            self._dibujar_hud_individual(estado_del_modelo)
+    
+    def _dibujar_hud_individual(self, estado_del_modelo):
+        """HUD para modo individual (original)"""
         vidas_texto = self.fuente_hud.render(f"Vidas: {estado_del_modelo.get('vidas_jugador', 0)}", True, WHITE) 
         self.screen.blit(vidas_texto, (10, 10))
         
@@ -193,7 +249,40 @@ class VistaJuego:
         # --- FIN DE MODIFICACIÓN ---
 
         nivel_texto_renderizado = self.fuente_hud.render(texto_nivel_para_mostrar, True, WHITE) 
-        self.screen.blit(nivel_texto_renderizado, (SCREEN_WIDTH - nivel_texto_renderizado.get_width() - 10, 10)) 
+        self.screen.blit(nivel_texto_renderizado, (SCREEN_WIDTH - nivel_texto_renderizado.get_width() - 10, 10))
+    
+    def _dibujar_hud_multijugador(self, estado_del_modelo):
+        """HUD para modo multijugador"""
+        jugadores_info = estado_del_modelo.get('jugadores', {})
+        
+        # Dibujar información de nivel
+        nivel_actual_info = estado_del_modelo.get('nivel', 0)
+        texto_nivel = f"Nivel: {nivel_actual_info}"
+        nivel_surf = self.fuente_hud.render(texto_nivel, True, WHITE)
+        self.screen.blit(nivel_surf, (SCREEN_WIDTH // 2 - nivel_surf.get_width() // 2, 10))
+        
+        # Dibujar información de cada jugador
+        y_offset = 10
+        for player_id, info in jugadores_info.items():
+            if info['active']:
+                color = info['color']
+                nombre = info['name']
+                vidas = info['vidas']
+                score = info['score']
+                
+                # Crear texto con color del jugador
+                texto_jugador = f"{nombre}: ♥{vidas} Pts:{score}"
+                
+                # Dibujar fondo con color del jugador
+                texto_surf = self.fuente_hud.render(texto_jugador, True, WHITE)
+                fondo_rect = pygame.Rect(10, y_offset, texto_surf.get_width() + 10, texto_surf.get_height() + 5)
+                
+                # Dibujar borde de color del jugador
+                pygame.draw.rect(self.screen, color, fondo_rect, 3)
+                pygame.draw.rect(self.screen, (50, 50, 50), fondo_rect)
+                
+                self.screen.blit(texto_surf, (15, y_offset + 2))
+                y_offset += 35 
 
     def _dibujar_selector_nivel_editado(self):
         overlay = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT), pygame.SRCALPHA)
@@ -248,8 +337,68 @@ class VistaJuego:
         self.boton_jugar_nivel_seleccionado.dibujar(self.screen)
         self.boton_volver_de_seleccion_a_menu.dibujar(self.screen)
 
+    def _dibujar_menu_multijugador(self, player_manager=None):
+        """Dibuja la pantalla de configuración multijugador"""
+        # Fondo semi-transparente
+        overlay = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT), pygame.SRCALPHA)
+        overlay.fill((0, 0, 0, 200))
+        self.screen.blit(overlay, (0, 0))
+        
+        # Título
+        titulo_surf = self.fuente_mensajes.render("Modo Multijugador", True, GOLD)
+        titulo_rect = titulo_surf.get_rect(center=(SCREEN_WIDTH // 2, 80))
+        self.screen.blit(titulo_surf, titulo_rect)
+        
+        # Información de jugadores
+        if player_manager:
+            players = player_manager.get_all_players()
+            y_start = 150
+            
+            if not players:
+                info_text = "No hay jugadores configurados"
+                info_surf = self.fuente_editor_info.render(info_text, True, WHITE)
+                info_rect = info_surf.get_rect(center=(SCREEN_WIDTH // 2, y_start + 50))
+                self.screen.blit(info_surf, info_rect)
+            else:
+                info_text = f"Jugadores configurados: {len(players)}/4"
+                info_surf = self.fuente_editor_info.render(info_text, True, WHITE)
+                info_rect = info_surf.get_rect(center=(SCREEN_WIDTH // 2, y_start))
+                self.screen.blit(info_surf, info_rect)
+                
+                # Mostrar cada jugador
+                for i, player in enumerate(players):
+                    y_pos = y_start + 40 + (i * 30)
+                    color_rect = pygame.Rect(SCREEN_WIDTH // 2 - 200, y_pos - 5, 20, 20)
+                    pygame.draw.rect(self.screen, player.color, color_rect)
+                    
+                    player_text = f"{player.name} - Controles: WASD/Espacio" if player.player_id == 1 else f"{player.name} - Controles: Personalizados"
+                    player_surf = self.fuente_editor_info.render(player_text, True, WHITE)
+                    self.screen.blit(player_surf, (SCREEN_WIDTH // 2 - 170, y_pos))
+                
+                # Mostrar controles
+                y_controles = y_start + 40 + (len(players) * 30) + 30
+                controles_title = self.fuente_editor_info.render("Controles:", True, GOLD)
+                self.screen.blit(controles_title, (SCREEN_WIDTH // 2 - 100, y_controles))
+                
+                controles_info = [
+                    "Jugador 1: W/A/S/D para mover, Espacio para disparar, X para parar",
+                    "Jugador 2: I/J/K/L para mover, Shift Derecho para disparar, Ctrl Der para parar",
+                    "Jugador 3: T/F/G/H para mover, R para disparar, Y para parar",
+                    "Jugador 4: Flechas para mover, Enter para disparar, Alt Der para parar"
+                ]
+                
+                for i, info in enumerate(controles_info[:len(players)]):
+                    control_surf = pygame.font.Font(None, 20).render(info, True, WHITE)
+                    self.screen.blit(control_surf, (50, y_controles + 25 + (i * 20)))
+        
+        # Botones
+        self.boton_agregar_jugador.dibujar(self.screen)
+        self.boton_quitar_jugador.dibujar(self.screen) 
+        self.boton_iniciar_multijugador.dibujar(self.screen)
+        self.boton_volver_menu_multi.dibujar(self.screen)
 
-    def dibujar_estado_juego(self, estado_del_modelo, estado_global_juego): 
+
+    def dibujar_estado_juego(self, estado_del_modelo, estado_global_juego, player_manager=None): 
         self._actualizar_visibilidad_botones(estado_global_juego) 
         pygame.display.set_caption(f"Tank Attack MVC - {estado_global_juego.replace('_',' ').title()}")
 
@@ -278,10 +427,13 @@ class VistaJuego:
                 self._dibujar_selector_nivel_editado()
             else:
                 self.boton_inicio.dibujar(self.screen) 
+                self.boton_multijugador.dibujar(self.screen)
                 self.boton_abrir_editor.dibujar(self.screen)
                 self.boton_cargar_nivel_editado_abrir_selector.dibujar(self.screen)
                 self.boton_salir_juego_principal.dibujar(self.screen) 
-                titulo = self.fuente_mensajes.render("Tank Attack!", True, GREEN); rect_titulo = titulo.get_rect(center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 4 - 20)); self.screen.blit(titulo, rect_titulo) 
+                titulo = self.fuente_mensajes.render("Tank Attack!", True, GREEN); rect_titulo = titulo.get_rect(center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 4 - 20)); self.screen.blit(titulo, rect_titulo)
+        elif estado_global_juego == CONFIGURANDO_JUGADORES:
+            self._dibujar_menu_multijugador(player_manager)
         elif estado_global_juego == NIVEL_COMPLETADO: 
             texto_msg = self.fuente_mensajes.render("Nivel Completado!", True, GREEN); self.boton_siguiente_nivel.dibujar(self.screen); rect_msg = texto_msg.get_rect(center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 3)); self.screen.blit(texto_msg, rect_msg) 
         elif estado_global_juego == GAME_OVER: 
@@ -301,7 +453,7 @@ class VistaJuego:
 
         pygame.display.flip() 
 
-    def manejar_eventos_ui(self, evento, estado_actual_juego): 
+    def manejar_eventos_ui(self, evento, estado_actual_juego, player_manager=None): 
         if estado_actual_juego == MENU_INICIO: 
             if self.mostrando_selector_nivel_editado:
                 if self.boton_jugar_nivel_seleccionado.manejar_evento(evento):
@@ -332,13 +484,23 @@ class VistaJuego:
 
 
             else: 
-                if self.boton_inicio.manejar_evento(evento): return "iniciar_juego_procedural" 
+                if self.boton_inicio.manejar_evento(evento): return "iniciar_juego_procedural"
+                if self.boton_multijugador.manejar_evento(evento): return "abrir_multijugador"
                 if self.boton_abrir_editor.manejar_evento(evento): return "abrir_editor"
                 if self.boton_cargar_nivel_editado_abrir_selector.manejar_evento(evento): 
                     self.mostrando_selector_nivel_editado = True
                     self._preparar_lista_niveles_para_mostrar() 
                     return "abrir_selector_nivel" 
-                if self.boton_salir_juego_principal.manejar_evento(evento): return "salir_juego" 
+                if self.boton_salir_juego_principal.manejar_evento(evento): return "salir_juego"
+        elif estado_actual_juego == CONFIGURANDO_JUGADORES:
+            if self.boton_agregar_jugador.manejar_evento(evento): 
+                return "agregar_jugador"
+            elif self.boton_quitar_jugador.manejar_evento(evento): 
+                return "quitar_jugador"
+            elif self.boton_iniciar_multijugador.manejar_evento(evento): 
+                return "iniciar_partida_multijugador"
+            elif self.boton_volver_menu_multi.manejar_evento(evento): 
+                return "volver_menu_principal"
         elif estado_actual_juego == NIVEL_COMPLETADO: 
             if self.boton_siguiente_nivel.manejar_evento(evento): return "siguiente_nivel" 
         elif estado_actual_juego == GAME_OVER: 

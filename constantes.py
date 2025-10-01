@@ -1,5 +1,3 @@
-# constantes.py
-
 # Dimensiones de la pantalla y cuadrícula
 SCREEN_WIDTH = 800
 SCREEN_HEIGHT = 600
@@ -34,9 +32,17 @@ GAME_OVER = "game_over"
 VICTORIA_FINAL = "victoria_final" # <--- AÑADE ESTA LÍNEA
 PAUSA = "pausa" # <--- NUEVO ESTADO
 EDITOR_NIVELES = "editor_niveles" # Para el futuro [32]
+# Estados multijugador
+MENU_MULTIJUGADOR = "menu_multijugador"
+CONFIGURANDO_JUGADORES = "configurando_jugadores"
+ESPERANDO_JUGADORES = "esperando_jugadores"
 
 # Identificadores de tipo de objeto (para el modelo)
 TIPO_JUGADOR = "jugador"
+TIPO_JUGADOR_1 = "jugador_1"
+TIPO_JUGADOR_2 = "jugador_2" 
+TIPO_JUGADOR_3 = "jugador_3"
+TIPO_JUGADOR_4 = "jugador_4"
 TIPO_ENEMIGO_NORMAL = "enemigo_normal"
 TIPO_ENEMIGO_RAPIDO = "enemigo_rapido"
 TIPO_ENEMIGO_FUERTE = "enemigo_fuerte"
@@ -48,6 +54,10 @@ TIPO_OBJETIVO2 = "objetivo2"
 # Rutas a assets (ajusta según tus nombres de archivo)
 ASSETS_PATH = "frontend/assets/" # Asegúrate que esta ruta sea correcta desde donde ejecutas main.py
 PLAYER_TANK_IMG = ASSETS_PATH + "player_tank.png"
+PLAYER_TANK_1_IMG = ASSETS_PATH + "player_tank.png"  # Verde (jugador 1)
+PLAYER_TANK_2_IMG = ASSETS_PATH + "player_tank.png"  # Azul (jugador 2) - usaremos tinting
+PLAYER_TANK_3_IMG = ASSETS_PATH + "player_tank.png"  # Amarillo (jugador 3) - usaremos tinting
+PLAYER_TANK_4_IMG = ASSETS_PATH + "player_tank.png"  # Magenta (jugador 4) - usaremos tinting
 ENEMY_NORMAL_IMG = ASSETS_PATH + "enemy_tank_normal.png"
 ENEMY_RAPIDO_IMG = ASSETS_PATH + "enemy_tank_rapido.png" # Crea esta imagen
 ENEMY_FUERTE_IMG = ASSETS_PATH + "enemy_tank_fuerte.png" # Crea esta imagen

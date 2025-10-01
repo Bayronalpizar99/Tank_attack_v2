@@ -1,9 +1,10 @@
 # backend/modelos.py
 import uuid
 import random
-import pygame # Necesario para pygame.time.get_ticks()
+import pygame
 from constantes import (
-    TIPO_BALA, TIPO_JUGADOR, TIPO_ENEMIGO_NORMAL, TIPO_ENEMIGO_RAPIDO, TIPO_ENEMIGO_FUERTE, TIPO_MURO,
+    TIPO_BALA, TIPO_JUGADOR, TIPO_JUGADOR_1, TIPO_JUGADOR_2, TIPO_JUGADOR_3, TIPO_JUGADOR_4,
+    TIPO_ENEMIGO_NORMAL, TIPO_ENEMIGO_RAPIDO, TIPO_ENEMIGO_FUERTE, TIPO_MURO,
     VIDAS_INICIALES_JUGADOR, CADENCIA_DISPARO_JUGADOR, RIGHT, STAY, TILE_SIZE,
     DIRECTIONS,
 )
@@ -64,15 +65,26 @@ class TanqueModel(GameObjectModel):
         return False 
 
 class TanqueJugadorModel(TanqueModel):
-    def __init__(self, x_tile, y_tile):
+    def __init__(self, x_tile, y_tile, player_id=1):
+        # Mapear player_id a tipo de jugador
+        player_types = {
+            1: TIPO_JUGADOR_1,
+            2: TIPO_JUGADOR_2, 
+            3: TIPO_JUGADOR_3,
+            4: TIPO_JUGADOR_4
+        }
+        
+        tipo_jugador = player_types.get(player_id, TIPO_JUGADOR)
+        
         super().__init__(
             x_tile,
             y_tile,
-            TIPO_JUGADOR, 
+            tipo_jugador, 
             VIDAS_INICIALES_JUGADOR, 
             velocidad_base_factor=0.1,
             cadencia_disparo=CADENCIA_DISPARO_JUGADOR 
         )
+        self.player_id = player_id
         self.vidas_por_nivel = VIDAS_INICIALES_JUGADOR 
 
         self.ticks_por_movimiento_jugador = 10
