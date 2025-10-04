@@ -150,3 +150,15 @@ OBJECTIVE_PATROL_MIN_DISTANCE_SQ = (OBJECTIVE_PATROL_RADIUS - 1) * (OBJECTIVE_PA
 
 # Constantes para el modo Online
 WEBSOCKET_URL = "wss://battlecity-relay-544519459817.us-central1.run.app"
+
+# constantes.py
+
+# ... (todas tus constantes existentes) ...
+
+# --- AÑADE ESTAS LÍNEAS AL FINAL ---
+
+# Constantes de Movimiento Fluido (píxeles por segundo)
+VELOCIDAD_JUGADOR_PX_S = 120  # Aprox. 3 casillas por segundo
+VELOCIDAD_ENEMIGO_NORMAL_PX_S = 60
+VELOCIDAD_ENEMIGO_RAPIDO_PX_S = 100
+VELOCIDAD_ENEMIGO_FUERTE_PX_S = 50

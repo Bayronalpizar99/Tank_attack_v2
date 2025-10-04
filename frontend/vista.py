@@ -33,7 +33,6 @@ class VistaJuego:
 
         self.editor_manager = None
 
-        # --- NUEVO: Elementos para el modo online ---
         self.modo_online_activo = False
         self.input_room_code = "sala123"
         self.feedback_online = "Ingresa un código de sala y únete"
@@ -41,7 +40,6 @@ class VistaJuego:
         y_online_start = SCREEN_HEIGHT // 2
         self.boton_crear_sala = Boton("Crear/Unirse a Sala", SCREEN_WIDTH // 2 - 150, y_online_start, 300, 50)
         self.boton_volver_de_online = Boton("Volver al Menú", SCREEN_WIDTH // 2 - 150, y_online_start + 70, 300, 50, color_fondo=RED)
-        # --- Fin de nuevos elementos ---
 
         self.mostrando_selector_nivel_editado = False
         self.lista_nombres_niveles_editados = []
@@ -111,20 +109,25 @@ class VistaJuego:
         surf = pygame.Surface((TILE_SIZE, TILE_SIZE))
         surf.fill(BLACK)
         return surf
-
+        
     def actualizar_objetos_visuales(self, estado_del_modelo):
         ids_modelos_actuales = {obj_info["id"] for obj_info in estado_del_modelo["objetos"]}
         for obj_id_modelo, sprite_visual in list(self.objetos_visuales_map.items()):
             if obj_id_modelo not in ids_modelos_actuales:
                 sprite_visual.kill(); del self.objetos_visuales_map[obj_id_modelo]
+        
         for obj_info in estado_del_modelo["objetos"]:
             obj_id_modelo = obj_info["id"]
             if obj_id_modelo not in self.objetos_visuales_map:
                 imagen_base = self._get_imagen_para_objeto(obj_info["tipo"])
                 sprite_visual = ObjetoVisualSprite(imagen_base); self.objetos_visuales_map[obj_id_modelo] = sprite_visual
                 self.sprites_visuales.add(sprite_visual)
-            else: sprite_visual = self.objetos_visuales_map[obj_id_modelo]
-            sprite_visual.rect.topleft = (obj_info["x_tile"] * TILE_SIZE, obj_info["y_tile"] * TILE_SIZE)
+            else:
+                sprite_visual = self.objetos_visuales_map[obj_id_modelo]
+
+            # --- AHORA USAMOS PIXEL_X y PIXEL_Y ---
+            sprite_visual.rect.topleft = (obj_info["pixel_x"], obj_info["pixel_y"])
+            
             if obj_info["direccion"]:
                 angulo = 0; dx, dy = obj_info["direccion"]
                 if dy == -1: angulo = 90
@@ -183,7 +186,6 @@ class VistaJuego:
             self.botones_niveles_editados.append(btn)
         self.scroll_offset_selector = 0
         self.nivel_editado_seleccionado_nombre = None
-
 
     def _dibujar_hud(self, estado_del_modelo):
         vidas_texto = self.fuente_hud.render(f"Vidas: {estado_del_modelo.get('vidas_jugador', 0)}", True, WHITE)
@@ -259,7 +261,6 @@ class VistaJuego:
         titulo = self.fuente_mensajes.render("Modo Online", True, GOLD)
         self.screen.blit(titulo, (SCREEN_WIDTH // 2 - titulo.get_width() // 2, 100))
 
-        # Campo de texto para el código de sala
         input_rect = pygame.Rect(SCREEN_WIDTH // 2 - 150, SCREEN_HEIGHT // 2 - 60, 300, 50)
         pygame.draw.rect(self.screen, (50, 50, 50), input_rect)
         pygame.draw.rect(self.screen, WHITE, input_rect, 2)
@@ -267,7 +268,6 @@ class VistaJuego:
         texto_input = self.fuente_selector_nivel.render(self.input_room_code, True, WHITE)
         self.screen.blit(texto_input, (input_rect.x + 10, input_rect.y + 10))
         
-        # Mensaje de feedback
         feedback_surf = self.fuente_editor_info.render(self.feedback_online, True, WHITE)
         self.screen.blit(feedback_surf, (SCREEN_WIDTH // 2 - feedback_surf.get_width() // 2, input_rect.bottom + 20))
         
@@ -339,7 +339,7 @@ class VistaJuego:
                 if evento.type == pygame.KEYDOWN:
                     if evento.key == pygame.K_BACKSPACE:
                         self.input_room_code = self.input_room_code[:-1]
-                    elif len(self.input_room_code) < 20: # Limitar longitud del código de sala
+                    elif len(self.input_room_code) < 20: 
                         self.input_room_code += evento.unicode
                 return None
             
