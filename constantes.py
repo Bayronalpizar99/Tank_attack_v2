@@ -144,3 +144,9 @@ OBJECTIVE_PATROL_RADIUS = 5 # Radio de patrulla alrededor del objetivo primario
 DFS_ACTIVATION_RANGE_SQ = DFS_ACTIVATION_RANGE * DFS_ACTIVATION_RANGE
 OBJECTIVE_PATROL_MAX_DISTANCE_SQ = (OBJECTIVE_PATROL_RADIUS + 1) * (OBJECTIVE_PATROL_RADIUS + 1) # Un poco más para que intente entrar
 OBJECTIVE_PATROL_MIN_DISTANCE_SQ = (OBJECTIVE_PATROL_RADIUS - 1) * (OBJECTIVE_PATROL_RADIUS - 1) # Un poco menos para que intente salir si está muy cerca
+# constantes.py
+
+# ... (todas tus constantes existentes) ...
+
+# Constantes para el modo Online
+WEBSOCKET_URL = "wss://battlecity-relay-544519459817.us-central1.run.app"

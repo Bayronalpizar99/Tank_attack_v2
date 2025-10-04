@@ -23,14 +23,12 @@ from backend.modelos import (
     BalaModel, MuroModel, ObjetivoPrimarioModel
 )
 
-# Ya no necesitamos a Prolog
-# from backend.logica_prolog import ControladorProlog 
-
 class MotorJuego:
     def __init__(self, player_shoot_sound=None, player_final_destruction_sound=None):
         self.nivel_actual_numero = 0
         self.objetos_del_juego = {}
         self.jugador_id = None
+        self.oponente_id = None # <-- NUEVO
         self.mapa_colisiones = {}
         self.ticks_logicos_actuales = 0
         self.tiempo_ms_juego = 0
@@ -50,21 +48,19 @@ class MotorJuego:
         }
         self.config_enemigos_por_objetivo = 1
         
-        # Eliminamos la referencia a Prolog
-        # self.controlador_prolog = ControladorProlog() 
         self.es_nivel_editado_actualmente = False
         self.last_player_tile_pos_for_enemy_logic = None
 
     def _limpiar_estado_nivel(self):
         self.objetos_del_juego = {}
         self.jugador_id = None
+        self.oponente_id = None # Limpiar también el oponente
         self.mapa_colisiones = {}
         for y_map in range(GRID_HEIGHT):
             for x_map in range(GRID_WIDTH):
                 self.mapa_colisiones[(x_map,y_map)] = []
         self.es_nivel_editado_actualmente = False
         self.last_player_tile_pos_for_enemy_logic = None
-
 
     def _agregar_objeto(self, objeto_modelo):
         if not hasattr(objeto_modelo, 'id') or objeto_modelo.id is None:
@@ -82,7 +78,6 @@ class MotorJuego:
             if not (isinstance(obj, TanqueEnemigoModel) and obj.fue_destruido_visual):
                 if obj.tipo_objeto != TIPO_BALA:
                      self._actualizar_mapa_colisiones_objeto(obj, agregar=False)
-
 
     def _actualizar_mapa_colisiones_objeto(self, obj, agregar=True):
         if isinstance(obj, TanqueEnemigoModel) and obj.fue_destruido_visual:
@@ -103,6 +98,36 @@ class MotorJuego:
                 if obj.id in self.mapa_colisiones.get(pos_actual_tile, []):
                     try: self.mapa_colisiones[pos_actual_tile].remove(obj.id)
                     except ValueError: pass
+
+    def anadir_oponente(self, x, y):
+        if self.oponente_id and self.oponente_id in self.objetos_del_juego:
+            return # Ya existe un oponente
+
+        oponente = TanqueJugadorModel(x, y) # Usamos el mismo modelo para simplicidad
+        self.oponente_id = oponente.id
+        self._agregar_objeto(oponente)
+        print(f"Oponente añadido con ID: {self.oponente_id}")
+
+    def actualizar_estado_remoto(self, datos_remotos):
+        if not self.oponente_id:
+            # Si recibimos datos de un jugador y no tenemos oponente, lo creamos
+            if datos_remotos.get('tipo') == TIPO_JUGADOR:
+                self.anadir_oponente(datos_remotos['x_tile'], datos_remotos['y_tile'])
+
+        oponente = self.objetos_del_juego.get(self.oponente_id)
+        if oponente:
+            oponente.x_tile = datos_remotos['x_tile']
+            oponente.y_tile = datos_remotos['y_tile']
+            # Asegurarse que la dirección sea una tupla
+            oponente.direccion_actual = tuple(datos_remotos['direccion']) 
+
+            if datos_remotos.get('disparo'):
+                bala_x = oponente.x_tile + oponente.direccion_actual[0]
+                bala_y = oponente.y_tile + oponente.direccion_actual[1]
+                if 0 <= bala_x < GRID_WIDTH and 0 <= bala_y < GRID_HEIGHT:
+                    bala = BalaModel(bala_x, bala_y, oponente.direccion_actual, self.oponente_id, TIPO_JUGADOR)
+                    self._agregar_objeto(bala)
+                    self._resolver_colision_inmediata_bala(bala)
 
     def _cargar_nivel_procedural(self, numero_nivel_int):
         print(f"Motor: Cargando nivel procedural {numero_nivel_int}")
@@ -284,7 +309,6 @@ class MotorJuego:
             else:
                 self.last_player_tile_pos_for_enemy_logic = None
             
-            # Eliminamos la carga de hechos en Prolog
             return True
         return False
 
@@ -416,11 +440,9 @@ class MotorJuego:
                         tanque.ticks_para_recalcular_ruta = 1
                     else:
                         pos_e_actual = (tanque.x_tile, tanque.y_tile)
-                        # --- INICIO DE LA MODIFICACIÓN ---
                         nueva_ruta = self._encontrar_ruta_a_estrella(pos_e_actual, pos_j_actual_para_enemigo)
                         if nueva_ruta:
-                            nueva_ruta.pop(0) # A* incluye el inicio, lo quitamos
-                        # --- FIN DE LA MODIFICACIÓN ---
+                            nueva_ruta.pop(0) 
                         tanque.ruta_actual_tiles = nueva_ruta if nueva_ruta else []
                         tanque.reset_timer_recalcular_ruta()
                         tanque.ultima_pos_jugador_vista_para_ruta = pos_j_actual_para_enemigo
@@ -597,13 +619,11 @@ class MotorJuego:
             return True
         return False
 
-    # --- NUEVO MÉTODO: ALGORITMO A* ---
     def _encontrar_ruta_a_estrella(self, inicio, fin):
         """
         Implementación del algoritmo A* para encontrar la ruta más corta.
         Devuelve una lista de tuplas (x, y) representando el camino.
         """
-        # Nodos a evaluar, la prioridad es (costo_total_estimado, costo_actual, posicion)
         frontera = [(0, 0, inicio, [])]  # (f, g, pos, camino)
         visitados = set()
         visitados.add(inicio)
@@ -614,22 +634,19 @@ class MotorJuego:
             if pos_actual == fin:
                 return camino + [pos_actual]
 
-            # Explorar vecinos (Arriba, Abajo, Izquierda, Derecha)
             for direccion in DIRECTIONS:
                 vecino = (pos_actual[0] + direccion[0], pos_actual[1] + direccion[1])
 
-                # Comprobar si el vecino es válido
                 if self._es_posicion_valida_y_libre(vecino[0], vecino[1], considerar_tanques=False) and vecino not in visitados:
                     visitados.add(vecino)
-                    nuevo_costo = costo_actual + 1  # Costo uniforme de 1 por cada paso
+                    nuevo_costo = costo_actual + 1
                     
-                    # Heurística de Manhattan: distancia estimada al final
                     heuristica = abs(vecino[0] - fin[0]) + abs(vecino[1] - fin[1])
                     costo_total_estimado = nuevo_costo + heuristica
                     
                     heapq.heappush(frontera, (costo_total_estimado, nuevo_costo, vecino, camino + [pos_actual]))
         
-        return None # No se encontró ruta
+        return None 
 
 
     def _todos_objetivos_destruidos(self):
@@ -683,10 +700,3 @@ class MotorJuego:
             "vidas_jugador": vidas_jugador,
             "enemigos_destruyendose": enemigos_destruyendose_vista
         }
-
-    def get_estado_mapa_para_prolog(self):
-        hechos = [f"dimensiones_mapa({GRID_WIDTH},{GRID_HEIGHT})."]
-        for obj_val in self.objetos_del_juego.values():
-            if isinstance(obj_val, MuroModel) and obj_val.activo:
-                hechos.append(f"muro({obj_val.x_tile},{obj_val.y_tile}).")
-        return hechos
