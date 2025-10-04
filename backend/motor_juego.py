@@ -117,10 +117,11 @@ class MotorJuego:
 
         oponente = self.objetos_del_juego.get(self.oponente_id)
         if oponente:
-            oponente.pixel_x = datos_remotos['pixel_x']
-            oponente.pixel_y = datos_remotos['pixel_y']
-            oponente.x_tile = int(oponente.pixel_x / TILE_SIZE)
-            oponente.y_tile = int(oponente.pixel_y / TILE_SIZE)
+            # Usar coordenadas de tile que se reciben y convertir a píxeles
+            oponente.x_tile = datos_remotos['x_tile']
+            oponente.y_tile = datos_remotos['y_tile']
+            oponente.pixel_x = oponente.x_tile * TILE_SIZE
+            oponente.pixel_y = oponente.y_tile * TILE_SIZE
             oponente.direccion_actual = tuple(datos_remotos['direccion'])
 
             if datos_remotos.get('disparo'):
